@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    container_name: chatgpt-team-board
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data.json:/app/data.json
+    environment:
+      - NODE_ENV=production
