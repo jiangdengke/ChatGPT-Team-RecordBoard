@@ -2,14 +2,9 @@
   "teams": [
     {
       "id": "30fbf8f7-081b-4ca8-b035-25aba4eb6320",
-      "name": "jiangdk",
+      "name": "Jiangdk1",
       "ownerEmail": "jiang1728439852@doai.codes",
-      "members": [
-        {
-          "id": "8ccddbc9-1409-461a-932b-4c4da49de5db",
-          "email": "aaaaa@qq.com"
-        }
-      ]
+      "members": []
     }
   ]
 }

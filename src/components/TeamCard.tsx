@@ -1,8 +1,8 @@
 'use client';
 
-import { addMember, deleteMember, deleteTeam } from '@/app/actions';
+import { addMember, deleteMember, deleteTeam, updateTeam } from '@/app/actions';
 import { Member, Team } from '@/types';
-import { Mail, Trash2, User, X, Shield } from 'lucide-react';
+import { Mail, Trash2, User, X, Shield, Edit2, Check, X as CancelIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 interface TeamCardProps {
@@ -13,6 +13,8 @@ interface TeamCardProps {
 export default function TeamCard({ team, isAdmin }: TeamCardProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const editFormRef = useRef<HTMLFormElement>(null);
 
   // Limit: Owner + 4 members. The members array stores the invited ones.
   const isFull = team.members.length >= 4;
@@ -21,29 +23,89 @@ export default function TeamCard({ team, isAdmin }: TeamCardProps) {
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 flex flex-col w-80 max-h-[calc(100vh-10rem)]">
       {/* Header */}
       <div className="p-4 border-b border-slate-100 bg-slate-50 rounded-t-lg">
-        <div className="flex justify-between items-start mb-2">
-            <h3 className="font-semibold text-slate-800 text-lg truncate" title={team.name}>{team.name}</h3>
-            {isAdmin && (
-                <button
-                onClick={() => {
-                    if (confirm('确定要删除这个团队吗？')) {
-                    deleteTeam(team.id);
-                    }
+        {isEditing ? (
+            <form 
+                action={async (formData) => {
+                    await updateTeam(team.id, formData);
+                    setIsEditing(false);
                 }}
-                className="text-slate-400 hover:text-red-500 transition-colors"
-                title="删除团队"
-                >
-                <Trash2 size={16} />
-                </button>
-            )}
-        </div>
-        
-        {/* Owner Email Display */}
-        <div className="flex items-center gap-2 text-slate-600 bg-blue-50 px-2 py-1.5 rounded text-xs border border-blue-100">
-            <Shield size={12} className="text-blue-600" />
-            <span className="font-medium text-blue-900">母号:</span>
-            <span className="truncate" title={team.ownerEmail}>{team.ownerEmail}</span>
-        </div>
+                ref={editFormRef}
+                className="space-y-2"
+            >
+                <div className="flex gap-2">
+                    <input 
+                        type="text" 
+                        name="name" 
+                        defaultValue={team.name}
+                        className="flex-1 px-2 py-1 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 font-semibold text-slate-800"
+                        required
+                        placeholder="Team 名称"
+                    />
+                </div>
+                <div className="flex gap-2 items-center">
+                    <input 
+                        type="email" 
+                        name="ownerEmail" 
+                        defaultValue={team.ownerEmail}
+                        className="flex-1 px-2 py-1 text-xs border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-600"
+                        required
+                        placeholder="母号邮箱"
+                    />
+                </div>
+                <div className="flex justify-end gap-2 pt-1">
+                    <button 
+                        type="button" 
+                        onClick={() => setIsEditing(false)}
+                        className="p-1 text-slate-400 hover:text-slate-600 rounded bg-white border border-slate-200"
+                        title="取消"
+                    >
+                        <CancelIcon size={14} />
+                    </button>
+                    <button 
+                        type="submit"
+                        className="p-1 text-white hover:bg-green-700 bg-green-600 rounded"
+                        title="保存"
+                    >
+                        <Check size={14} />
+                    </button>
+                </div>
+            </form>
+        ) : (
+            <>
+                <div className="flex justify-between items-start mb-2 group/header">
+                    <h3 className="font-semibold text-slate-800 text-lg truncate flex-1 pr-2" title={team.name}>{team.name}</h3>
+                    {isAdmin && (
+                        <div className="flex gap-1 opacity-0 group-hover/header:opacity-100 transition-opacity">
+                             <button
+                                onClick={() => setIsEditing(true)}
+                                className="text-slate-400 hover:text-blue-500 transition-colors p-1"
+                                title="编辑团队"
+                            >
+                                <Edit2 size={14} />
+                            </button>
+                            <button
+                                onClick={() => {
+                                    if (confirm('确定要删除这个团队吗？')) {
+                                    deleteTeam(team.id);
+                                    }
+                                }}
+                                className="text-slate-400 hover:text-red-500 transition-colors p-1"
+                                title="删除团队"
+                            >
+                                <Trash2 size={14} />
+                            </button>
+                        </div>
+                    )}
+                </div>
+                
+                {/* Owner Email Display */}
+                <div className="flex items-center gap-2 text-slate-600 bg-blue-50 px-2 py-1.5 rounded text-xs border border-blue-100 max-w-full">
+                    <Shield size={12} className="text-blue-600 flex-shrink-0" />
+                    <span className="font-medium text-blue-900 flex-shrink-0">母号:</span>
+                    <span className="truncate" title={team.ownerEmail}>{team.ownerEmail}</span>
+                </div>
+            </>
+        )}
       </div>
 
       {/* Member List */}

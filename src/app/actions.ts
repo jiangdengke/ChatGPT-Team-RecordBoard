@@ -19,7 +19,7 @@ export async function login(formData: FormData) {
   if (password === PASSWORD) {
     const cookieStore = await cookies();
     // Valid for 7 days
-    cookieStore.set(COOKIE_NAME, 'true', { httpOnly: true, secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 7 });
+    cookieStore.set(COOKIE_NAME, 'true', { httpOnly: true, secure: false, maxAge: 60 * 60 * 24 * 7 });
     revalidatePath('/');
     return { success: true };
   }
@@ -49,6 +49,26 @@ export async function createTeam(formData: FormData) {
   };
 
   await saveTeams([...teams, newTeam]);
+  revalidatePath('/');
+}
+
+export async function updateTeam(teamId: string, formData: FormData) {
+  if (!(await checkAuth())) return;
+
+  const name = formData.get('name') as string;
+  const ownerEmail = formData.get('ownerEmail') as string;
+
+  if (!name || !ownerEmail) return;
+
+  const teams = await getTeams();
+  const updatedTeams = teams.map((team) => {
+    if (team.id === teamId) {
+      return { ...team, name, ownerEmail };
+    }
+    return team;
+  });
+
+  await saveTeams(updatedTeams);
   revalidatePath('/');
 }
 
