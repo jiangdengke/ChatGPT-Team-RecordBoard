@@ -1,6 +1,13 @@
 'use server';
 
-import { getTeams, saveTeams } from '@/lib/data';
+import { 
+  getTeams, 
+  createTeam as createTeamDb, 
+  updateTeam as updateTeamDb, 
+  deleteTeam as deleteTeamDb, 
+  addMember as addMemberDb, 
+  deleteMember as deleteMemberDb 
+} from '@/lib/data';
 import { Member, Team } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { randomUUID } from 'crypto';
@@ -40,7 +47,6 @@ export async function createTeam(formData: FormData) {
   
   if (!name || !ownerEmail) return;
 
-  const teams = await getTeams();
   const newTeam: Team = {
     id: randomUUID(),
     name,
@@ -48,7 +54,7 @@ export async function createTeam(formData: FormData) {
     members: [],
   };
 
-  await saveTeams([...teams, newTeam]);
+  await createTeamDb(newTeam);
   revalidatePath('/');
 }
 
@@ -60,15 +66,15 @@ export async function updateTeam(teamId: string, formData: FormData) {
 
   if (!name || !ownerEmail) return;
 
-  const teams = await getTeams();
-  const updatedTeams = teams.map((team) => {
-    if (team.id === teamId) {
-      return { ...team, name, ownerEmail };
-    }
-    return team;
-  });
+  // We only update the team details, not members here
+  const teamToUpdate: Team = {
+    id: teamId,
+    name,
+    ownerEmail,
+    members: [], // Not used in updateTeamDb
+  };
 
-  await saveTeams(updatedTeams);
+  await updateTeamDb(teamToUpdate);
   revalidatePath('/');
 }
 
@@ -79,45 +85,33 @@ export async function addMember(teamId: string, formData: FormData) {
   if (!email) return;
 
   const teams = await getTeams();
-  const updatedTeams = teams.map((team) => {
-    if (team.id === teamId) {
-      // Check for duplicate email in this team (optional but good)
+  const team = teams.find(t => t.id === teamId);
+  
+  if (team) {
       if (team.members.some(m => m.email === email)) {
-          return team;
+          return; // Already exists
       }
-      
+
       const newMember: Member = {
         id: randomUUID(),
         email,
       };
-      return { ...team, members: [...team.members, newMember] };
-    }
-    return team;
-  });
+      
+      await addMemberDb(teamId, newMember);
+  }
 
-  await saveTeams(updatedTeams);
   revalidatePath('/');
 }
 
 export async function deleteMember(teamId: string, memberId: string) {
   if (!(await checkAuth())) return;
-  const teams = await getTeams();
-  const updatedTeams = teams.map((team) => {
-    if (team.id === teamId) {
-      const filteredMembers = team.members.filter((m) => m.id !== memberId);
-      return { ...team, members: filteredMembers };
-    }
-    return team;
-  });
-
-  await saveTeams(updatedTeams);
+  // teamId is not strictly needed for deletion if memberId is unique, but kept for signature compatibility if needed
+  await deleteMemberDb(memberId);
   revalidatePath('/');
 }
 
 export async function deleteTeam(teamId: string) {
     if (!(await checkAuth())) return;
-    const teams = await getTeams();
-    const updatedTeams = teams.filter(t => t.id !== teamId);
-    await saveTeams(updatedTeams);
+    await deleteTeamDb(teamId);
     revalidatePath('/');
 }
